@@ -1,0 +1,25 @@
+### Questions:
+Which types of events (as indicated in the EVTYPE variable) across the United States:
+
+1. are most harmful with respect to population health, across the United States?
+2. have the greatest economic consequences?
+
+
+### Requirements:
+1. Publish to RPubs.
+2. Compile to HTML.
+3. Doc layout:
+
+  - Language: English.
+  - Title: summarizes your data analysis
+  - Synopsis section: describes and summarizes the analysis in at most 10 complete sentences.
+  - Data Processing section: code and narration
+  - Result section
+  - Figures: max of three figures.
+
+
+## Reproducible Research Peer Assignment 2
+### Title: Anaylsis the effect of Storms and other severe weather events on public health and economic.
+
+
+### Synopsis
