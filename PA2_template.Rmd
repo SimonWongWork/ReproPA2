@@ -1,3 +1,6 @@
+---
+output: pdf_document
+---
 ## Reproducible Research Peer Assignment 2
 ### Title: Anaylsis the effect of Storms and other severe weather events on public health and economic.
 
@@ -25,7 +28,6 @@ library(plyr)
 # - Download the "repdata-data-StormData.csv.bz2" data file from the download link indicated in Coursera and  locate it in working directory.
 subsetData <- read.table(bzfile("repdata-data-StormData.csv.bz2"), header = TRUE, sep = ",")
 
-
 # Convert into factor after converting to upper case
 subsetData$EVTYPE <- toupper(subsetData$EVTYPE)
 subsetData$EVTYPE <- as.factor(subsetData$EVTYPE)
@@ -33,6 +35,8 @@ subsetData$EVTYPE <- as.factor(subsetData$EVTYPE)
 
 
 ### Question 1: Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+
+### Result
 ```{r}
 # Subset the retrieved data to the data that just includes the events or damages and health.
 subset_Item <- c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")
@@ -57,15 +61,17 @@ par(mfrow = c(1, 2))
 
 # Plot the Top 10 Events by FATALITIES on the left side.
 barplot(top10_HarmfulEvent_1$sum_FATALITIES, names.arg = top10_HarmfulEvent_1$EVTYPE, xlab = "", 
-        ylab = "Fatalities", main = "Top 10 Events by FATALITIES", las = 2,cex.names = 0.7,cex.axis = 0.7)
+        ylab = "Fatalities", main = "Top 10 Events by Fatalities", las = 2,cex.names = 0.7,cex.axis = 0.7)
 
 # Plot the Top 10 Events by INJURIES on the right side.
 barplot(top10_HarmfulEvent_1$sum_INJURIES, names.arg = top10_HarmfulEvent_1$EVTYPE, xlab = "", 
-        ylab = "Injury", main = "Top 10 Events by INJURIES", las = 2, cex.names = 0.7, cex.axis = 0.7)
+        ylab = "Injury", main = "Top 10 Events by Injuries", las = 2, cex.names = 0.7, cex.axis = 0.7)
 ```
 
 
 ### Question 2: Across the United States, which types of events have the greatest economic consequences?
+
+### Result
 ```{r}
 # Data is process to present the actual exponential damage to properties.
 subsetData$PROPDMGEXP <- as.character(subsetData$PROPDMGEXP)
@@ -87,29 +93,61 @@ others <- subsetData$CROPDMGEXP %in% c("1000","1000000","1000000000") == F
 subsetData$CROPDMGEXP[others == T] <- "1"
 subsetData$CROPDMGEXP <- as.numeric(subsetData$CROPDMGEXP)
 
-#create new variable to store actual damage
+# Create new data frame to store actual damage.
 subsetData$ACTPORPDMG <- subsetData$PROPDMG * subsetData$PROPDMGEXP
 subsetData$ACTCROPDMG <- subsetData$CROPDMG * subsetData$CROPDMGEXP
 
-
-#create new variable total injuries and fatalities
+# Create new data frame to record the total of injuries and fatalities.
 subsetData$TOTAL_HARM <- subsetData$INJURIES + subsetData$FATALITIES
 
-#create new variable total damage
+
+# Create new data subsets that contains event brings most damages to properties.
+sum_propDmg <- aggregate(subsetData[,"ACTPORPDMG"], by = list(subsetData$EVTYPE), FUN = sum, na.rm = TRUE)
+names(sum_propDmg) <- c("EVTYPE","ACTPORPDMG")
+
+# Arrange the components of the subset data "sum_propDmg" according the ACTPORPDMG column in decreasing order.
+sum_propDmg <- sum_propDmg[ order(sum_propDmg$ACTPORPDMG, decreasing = TRUE), ]
+
+# To find out which Event Type that causes most damages to properties.
+sum_propDmg$EVTYPE[which.max(sum_propDmg$ACTPORPDMG)]
+
+
+
+# Create new data subsets that contains event brings most damages to crops.
+sum_cropDmg <- aggregate( subsetData[,"ACTCROPDMG"], by=list(subsetData$EVTYPE), FUN = sum, na.rm = TRUE)
+names(sum_cropDmg) <- c("EVTYPE","ACTCROPDMG")
+
+# Arrange the components of the subset data "sum_propDmg" according the ACTPORPDMG column in decreasing order.
+sum_cropDmg <- sum_cropDmg[ order(sum_cropDmg$ACTCROPDMG, decreasing = TRUE), ]
+
+# To find out the Event Type that causes most damages to crops.
+sum_cropDmg$EVTYPE[which.max(sum_cropDmg$ACTCROPDMG)]
+
+
+
+# Create new data frame for storing total damage.
 subsetData$TOTAL_DMG <- subsetData$ACTPORPDMG + subsetData$ACTCROPDMG
 
-
-#plot bar graph for top 20 total economic consequences.
+# Create new data subsets that contains total damage according the list of Event type.
 sum_Events <- aggregate( subsetData[,"TOTAL_DMG"], by = list(subsetData$EVTYPE), FUN = sum, na.rm = TRUE)
+
+# Set new vector name for this newly created subset data.
 names(sum_Events) <- c("EVTYPE","TOTAL_DMG")
 
+# Arrange the components of the subset data "sum_Events" according the TOTA_DMG column in decreasing order.
 sum_Events <- sum_Events[ order(sum_Events$TOTAL_DMG, decreasing = TRUE), ]
+
+# Plot bar graph for top 20 total economic consequences.
 barplot( height = sum_Events$TOTAL_DMG[1:20], names.arg = sum_Events$EVTYPE[1:20], 
          las = 3, xlab="Event Type", ylab = "Tatal Property & Crop Damage", 
          main = "Top 20 Storm Event with greatest Economic Consequences", col = "blue")
 
-
 ```
+
+
+### Summary
+Based on the analysis and shown in plots, **Tornado** is the event type that causes most fatalities and injuries.
+However **Flood** is the greatest economic consequences and it is observable in the plot of Top 20 event type that causes Economic Consequences. **Flood** is also the event type that bring more damages to properties and **Drought** is the event type that causes more damages to crop.
 
 
 
