@@ -1,5 +1,5 @@
 ---
-output: pdf_document
+output: html_document
 ---
 ## Reproducible Research Peer Assignment 2
 ### Title: Anaylsis the effect of Storms and other severe weather events on public health and economic.
