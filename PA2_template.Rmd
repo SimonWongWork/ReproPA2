@@ -1,26 +1,115 @@
-### Questions:
-Which types of events (as indicated in the EVTYPE variable) across the United States:
-
-1. are most harmful with respect to population health, across the United States?
-2. have the greatest economic consequences?
-
-
-### Requirements:
-1. Publish to RPubs.
-2. Compile to HTML.
-3. Doc layout:
-
-  - Language: English.
-  - Title: summarizes your data analysis
-  - Synopsis section: describes and summarizes the analysis in at most 10 complete sentences.
-  - Data Processing section: code and narration
-  - Result section
-  - Figures: max of three figures.
-
-
 ## Reproducible Research Peer Assignment 2
 ### Title: Anaylsis the effect of Storms and other severe weather events on public health and economic.
 
 
 ### Synopsis
-This project is 
+This project is to analysis the few top types of Storms and other severa weather events that bring damages to the people (fatalities and injuries) and monetary damages (properties and crops damages).
+This analysis is based on the storm data from U.S. National Oceanic Atmospheric Administration (NOAA), which recorded the happening timing, fatalities, injuries and property damage of storms and weather events in United States span from 1950 to 2011.
+In this analysis, **Tornado** is the most harmful event to population health as shown in plots below, while **Flood** turned out to be the event that caused the greatest economy consequences.
+
+
+### Libraries loading and Data processing.
+1. Load necessarily libraries.
+```{r}
+library(knitr)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(plyr)
+```
+
+2. Load and process data file.
+```{r}
+# Assumption:
+# - Set the working directory in source File location .
+# - Download the "repdata-data-StormData.csv.bz2" data file from the download link indicated in Coursera and  locate it in working directory.
+subsetData <- read.table(bzfile("repdata-data-StormData.csv.bz2"), header = TRUE, sep = ",")
+
+
+# Convert into factor after converting to upper case
+subsetData$EVTYPE <- toupper(subsetData$EVTYPE)
+subsetData$EVTYPE <- as.factor(subsetData$EVTYPE)
+```
+
+
+### Question 1: Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+```{r}
+# Subset the retrieved data to the data that just includes the events or damages and health.
+subset_Item <- c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")
+subsetData <- subsetData[subset_Item]
+
+# Use FATALITIES != 0 and INJURIES != 0 as a filter to subset the harmful factors to population.
+df1 <- subset(subsetData, !(FATALITIES == 0 & INJURIES == 0), select = c(EVTYPE, FATALITIES, INJURIES))
+
+# Create new data frame by split the analysed data and apply "summarize" and "sum" function on it.
+harmfulFactor_1 <- ddply( df1,.(EVTYPE),summarize, sum_FATALITIES = c(sFATALITIES = sum(FATALITIES)), 
+                         sum_INJURIES = sum(INJURIES), total_sum = sum(INJURIES) + sum(FATALITIES) )
+
+
+# Display the top 10 harmful event types.
+top10_HarmfulEvent_1 <-head( arrange(harmfulFactor_1, desc(total_sum)), n = 10)
+top10_HarmfulEvent_1
+
+
+# Plot a bar chart to show top 10 harmful events that affects population health.
+# Set Graphical parameters of a vector form c( nr, nc), Subsequent figures will be drawn in an nr-by-nc array on the device by columns (mfcol), or rows (mfrow), respectively.
+par(mfrow = c(1, 2)) 
+
+# Plot the Top 10 Events by FATALITIES on the left side.
+barplot(top10_HarmfulEvent_1$sum_FATALITIES, names.arg = top10_HarmfulEvent_1$EVTYPE, xlab = "", 
+        ylab = "Fatalities", main = "Top 10 Events by FATALITIES", las = 2,cex.names = 0.7,cex.axis = 0.7)
+
+# Plot the Top 10 Events by INJURIES on the right side.
+barplot(top10_HarmfulEvent_1$sum_INJURIES, names.arg = top10_HarmfulEvent_1$EVTYPE, xlab = "", 
+        ylab = "Injury", main = "Top 10 Events by INJURIES", las = 2, cex.names = 0.7, cex.axis = 0.7)
+```
+
+
+### Question 2: Across the United States, which types of events have the greatest economic consequences?
+```{r}
+# Data is process to present the actual exponential damage to properties.
+subsetData$PROPDMGEXP <- as.character(subsetData$PROPDMGEXP)
+subsetData$PROPDMGEXP[grep("K", subsetData$PROPDMGEXP)] <- "1000"
+subsetData$PROPDMGEXP[grep("M", subsetData$PROPDMGEXP)] <- "1000000"
+subsetData$PROPDMGEXP[grep("m", subsetData$PROPDMGEXP)] <- "1000000"
+subsetData$PROPDMGEXP[grep("B", subsetData$PROPDMGEXP)] <- "1000000000"
+others <- subsetData$PROPDMGEXP %in% c("1000","1000000","1000000000") == F
+subsetData$PROPDMGEXP[others == T] <- "1"
+subsetData$PROPDMGEXP <- as.numeric(subsetData$PROPDMGEXP)
+
+# Data is process to present the actual exponential damage to crops.
+subsetData$CROPDMGEXP <- as.character(subsetData$CROPDMGEXP)
+subsetData$CROPDMGEXP[grep("K", subsetData$CROPDMGEXP)] <- "1000"
+subsetData$CROPDMGEXP[grep("M", subsetData$CROPDMGEXP)] <- "1000000"
+subsetData$CROPDMGEXP[grep("m", subsetData$CROPDMGEXP)] <- "1000000"
+subsetData$CROPDMGEXP[grep("B", subsetData$CROPDMGEXP)] <- "1000000000"
+others <- subsetData$CROPDMGEXP %in% c("1000","1000000","1000000000") == F
+subsetData$CROPDMGEXP[others == T] <- "1"
+subsetData$CROPDMGEXP <- as.numeric(subsetData$CROPDMGEXP)
+
+#create new variable to store actual damage
+subsetData$ACTPORPDMG <- subsetData$PROPDMG * subsetData$PROPDMGEXP
+subsetData$ACTCROPDMG <- subsetData$CROPDMG * subsetData$CROPDMGEXP
+
+
+#create new variable total injuries and fatalities
+subsetData$TOTAL_HARM <- subsetData$INJURIES + subsetData$FATALITIES
+
+#create new variable total damage
+subsetData$TOTAL_DMG <- subsetData$ACTPORPDMG + subsetData$ACTCROPDMG
+
+
+#plot bar graph for top 20 total economic consequences.
+sum_Events <- aggregate( subsetData[,"TOTAL_DMG"], by = list(subsetData$EVTYPE), FUN = sum, na.rm = TRUE)
+names(sum_Events) <- c("EVTYPE","TOTAL_DMG")
+
+sum_Events <- sum_Events[ order(sum_Events$TOTAL_DMG, decreasing = TRUE), ]
+barplot( height = sum_Events$TOTAL_DMG[1:20], names.arg = sum_Events$EVTYPE[1:20], 
+         las = 3, xlab="Event Type", ylab = "Tatal Property & Crop Damage", 
+         main = "Top 20 Storm Event with greatest Economic Consequences", col = "blue")
+
+
+```
+
+
+
